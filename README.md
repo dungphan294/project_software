@@ -3,13 +3,13 @@ Project Software - Saxion
 
 // Khai báo pin (3 pin : Latchpin, data, clock)
     ENTER NUMBER FROM ROTARY ENCODER
-//DISPLAY: 1st 7-segment on :
-//TO DO: Choose value for the first 7-segment
+// DISPLAY: 1st 7-segment on :
+// TO DO: Choose value for the first 7-segment
   INPUT: Read DATA from Rotary encoder
   PROCESS: Arduino 
   OUTPUT: Display input from Rotary to 7 segments
-//TO DO: Click to enter a number (CLICK ROTARY ENCODER BUTTON)
-//TO DO: Switch to the second 7-segment
+// TO DO: Click to enter a number (CLICK ROTARY ENCODER BUTTON)
+// TO DO: Switch to the second 7-segment
   Click to switch from rotary encoder (BUTTON)
   Display on 7-segments
 

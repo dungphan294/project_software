@@ -55,4 +55,17 @@ Project Software - Saxion
 //TO DO: Turn back to "FIRST SEGMENT ON" steps
 //TO DO: +100s waiting for the next attempt
 
+  Change pass:(After safe open)
+//TO DO: Click button to change password mode
+//Display: OLED: Old password
+//TO DO: Enter current password
+//Display: Enter input for 7-segment
+//TO DO: Click button to confirm
+//IF NO =>> TURN BACK TO enter current password
+//IF YES =>> DISPLAY: OLED: New password 
+//TO DO: Enter new password
+//TO DO: Enter input for 7-segment 
+//IF NO: TURN BACK TO enter new password
+//IF YES =>> DISPLAY: OLED: Change password successfully
+
 

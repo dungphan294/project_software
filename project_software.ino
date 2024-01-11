@@ -2,22 +2,23 @@
 
 // -- COMPONENTS --
 //  SHIFT REGISTER
-const int SR_DATA_PIN = 13;     // SER
-const int SR_LATCH_PIN = 12;    // RCLK
-const int SR_CLOCK_PIN = 11;    // SRCLK
-
+#define SR_DATA_PIN 13     // SER
+#define SR_LATCH_PIN 12    // RCLK
+#define SR_CLOCK_PIN 11    // SRCLK
 // BCD
-const int BCD_A_PIN = A0;
-const int BCD_B_PIN = A1;
-const int BCD_C_PIN = A2;
-const int BCD_D_PIN = A3;
-
+#define BCD_A_PIN  A0
+#define BCD_B_PIN  A1
+#define BCD_C_PIN  A2
+#define BCD_D_PIN  A3
 // ROTARY ENCODER
-const int RE_BUTTON_PIN = 6;    // SW
-const int RE_CLK_PIN = 5;       // A
-const int RE_DATA_PIN = 4;      // B
+#define RE_BUTTON_PIN 6    // SW
+#define RE_CLK_PIN 5       // A
+#define RE_DATA_PIN 4      // B
 #define DIRECTION_CW 0          // clockwise direction
 #define DIRECTION_CCW 1         // counter-clockwise direction
+// BUTTON
+#define BUTTON_SUBMIT_PIN = 1
+
 
 // -- VARIABLES
 const int DEBOUNCE_TIME = 50;

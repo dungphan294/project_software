@@ -1,98 +1,105 @@
 #include <Arduino.h>
+#include <EEPROM.h>
 
 // -- COMPONENTS --
 //  SHIFT REGISTER
-const int SR_DATA_PIN = 13;     // SER
-const int SR_LATCH_PIN = 12;    // RCLK
-const int SR_CLOCK_PIN = 11;    // SRCLK
-
+#define SR_DATA_PIN 13     // SER
+#define SR_LATCH_PIN 12    // RCLK
+#define SR_CLOCK_PIN 11    // SRCLK
 // BCD
-const int BCD_A_PIN = A0;
-const int BCD_B_PIN = A1;
-const int BCD_C_PIN = A2;
-const int BCD_D_PIN = A3;
-
+#define BCD_A_PIN  A0
+#define BCD_B_PIN  A1
+#define BCD_C_PIN  A2
+#define BCD_D_PIN  A3
 // ROTARY ENCODER
-const int RE_BUTTON_PIN = 6;    // SW
-const int RE_CLK_PIN = 5;       // BCD_A_PIN
-const int RE_DATA_PIN = 4;      // BCD_B_PIN
+#define RE_BUTTON_PIN 6    // SW
+#define RE_CLK_PIN 5       // A
+#define RE_DATA_PIN 4      // B
 #define DIRECTION_CW 0          // clockwise direction
 #define DIRECTION_CCW 1         // counter-clockwise direction
+// BUTTON
+#define BUTTON_SUBMIT_PIN = 1
 
 // -- VARIABLES
-const int DEBOUNCE_TIME = 50;
+#define DEBOUNCE_TIME = 50;
+
+//typedef struct {
+//    char password_encryted[3];
+//    byte attempts;
+//    int penalty; //
+//} password;
 
 
-void zero() {  //0000
-    digitalWrite(BCD_A_PIN, LOW);
-    digitalWrite(BCD_B_PIN, LOW);
-    digitalWrite(BCD_C_PIN, LOW);
-    digitalWrite(BCD_D_PIN, LOW);
-}
-
-void one() {  //0001
-    digitalWrite(BCD_A_PIN, HIGH);
-    digitalWrite(BCD_B_PIN, LOW);
-    digitalWrite(BCD_C_PIN, LOW);
-    digitalWrite(BCD_D_PIN, LOW);
-}
-
-void two() {  // 0010
-    digitalWrite(BCD_A_PIN, LOW);
-    digitalWrite(BCD_B_PIN, HIGH);
-    digitalWrite(BCD_C_PIN, LOW);
-    digitalWrite(BCD_D_PIN, LOW);
-}
-
-void three() {  // 0011
-    digitalWrite(BCD_A_PIN, HIGH);
-    digitalWrite(BCD_B_PIN, HIGH);
-    digitalWrite(BCD_C_PIN, LOW);
-    digitalWrite(BCD_D_PIN, LOW);
-}
-
-void four() {  // 0100
-    digitalWrite(BCD_A_PIN, LOW);
-    digitalWrite(BCD_B_PIN, LOW);
-    digitalWrite(BCD_C_PIN, HIGH);
-    digitalWrite(BCD_D_PIN, LOW);
-}
-
-void five() {  // 0101
-    digitalWrite(BCD_A_PIN, HIGH);
-    digitalWrite(BCD_B_PIN, LOW);
-    digitalWrite(BCD_C_PIN, HIGH);
-    digitalWrite(BCD_D_PIN, LOW);
-}
-
-void six() {  // 0110
-    digitalWrite(BCD_A_PIN, LOW);
-    digitalWrite(BCD_B_PIN, HIGH);
-    digitalWrite(BCD_C_PIN, HIGH);
-    digitalWrite(BCD_D_PIN, LOW);
-}
-
-void seven() {  // 0111
-    digitalWrite(BCD_A_PIN, HIGH);
-    digitalWrite(BCD_B_PIN, HIGH);
-    digitalWrite(BCD_C_PIN, HIGH);
-    digitalWrite(BCD_D_PIN, LOW);
-}
-
-void eight() {  // 1000
-    digitalWrite(BCD_A_PIN, LOW);
-    digitalWrite(BCD_B_PIN, LOW);
-    digitalWrite(BCD_C_PIN, LOW);
-    digitalWrite(BCD_D_PIN, HIGH);
-}
-
-void nine() {  // 1001
-    digitalWrite(BCD_A_PIN, HIGH);
-    digitalWrite(BCD_B_PIN, LOW);
-    digitalWrite(BCD_C_PIN, LOW);
-    digitalWrite(BCD_D_PIN, HIGH);
-}
-
+// BCD functions
+// void zero() {  //0000
+//    digitalWrite(BCD_A_PIN, LOW);
+//    digitalWrite(BCD_B_PIN, LOW);
+//    digitalWrite(BCD_C_PIN, LOW);
+//    digitalWrite(BCD_D_PIN, LOW);
+//}
+//
+//void one() {  //0001
+//    digitalWrite(BCD_A_PIN, HIGH);
+//    digitalWrite(BCD_B_PIN, LOW);
+//    digitalWrite(BCD_C_PIN, LOW);
+//    digitalWrite(BCD_D_PIN, LOW);
+//}
+//
+//void two() {  // 0010
+//    digitalWrite(BCD_A_PIN, LOW);
+//    digitalWrite(BCD_B_PIN, HIGH);
+//    digitalWrite(BCD_C_PIN, LOW);
+//    digitalWrite(BCD_D_PIN, LOW);
+//}
+//
+//void three() {  // 0011
+//    digitalWrite(BCD_A_PIN, HIGH);
+//    digitalWrite(BCD_B_PIN, HIGH);
+//    digitalWrite(BCD_C_PIN, LOW);
+//    digitalWrite(BCD_D_PIN, LOW);
+//}
+//
+//void four() {  // 0100
+//    digitalWrite(BCD_A_PIN, LOW);
+//    digitalWrite(BCD_B_PIN, LOW);
+//    digitalWrite(BCD_C_PIN, HIGH);
+//    digitalWrite(BCD_D_PIN, LOW);
+//}
+//
+//void five() {  // 0101
+//    digitalWrite(BCD_A_PIN, HIGH);
+//    digitalWrite(BCD_B_PIN, LOW);
+//    digitalWrite(BCD_C_PIN, HIGH);
+//    digitalWrite(BCD_D_PIN, LOW);
+//}
+//
+//void six() {  // 0110
+//    digitalWrite(BCD_A_PIN, LOW);
+//    digitalWrite(BCD_B_PIN, HIGH);
+//    digitalWrite(BCD_C_PIN, HIGH);
+//    digitalWrite(BCD_D_PIN, LOW);
+//}
+//
+//void seven() {  // 0111
+//    digitalWrite(BCD_A_PIN, HIGH);
+//    digitalWrite(BCD_B_PIN, HIGH);
+//    digitalWrite(BCD_C_PIN, HIGH);
+//    digitalWrite(BCD_D_PIN, LOW);
+//}
+//
+//void eight() {  // 1000
+//    digitalWrite(BCD_A_PIN, LOW);
+//    digitalWrite(BCD_B_PIN, LOW);
+//    digitalWrite(BCD_C_PIN, LOW);
+//    digitalWrite(BCD_D_PIN, HIGH);
+//}
+//
+//void nine() {  // 1001
+//    digitalWrite(BCD_A_PIN, HIGH);
+//    digitalWrite(BCD_B_PIN, LOW);
+//    digitalWrite(BCD_C_PIN, LOW);
+//    digitalWrite(BCD_D_PIN, HIGH);
+//}
 
 void displayNumber(int number, int display) {
     static int shift_register_1 = 0;
@@ -211,6 +218,8 @@ void loop() {
      * TODO: IF (
      */
     const int seven_segments[3] = {0, 1, 2};
+    const int password[3] = {1, 2, 3};
+    int user_input[3] = {0, 0, 0};
     static int index_seven_segments = 0;
     static int counter = 0;
     static bool direction = DIRECTION_CW;
@@ -232,7 +241,23 @@ void loop() {
         if (RE_BUTTON_state == LOW) {
             // Switch two the second seven segment
             Serial.println("The button is pressed");
-            index_seven_segments++;
+            // TODO: Save input value into an array then compare with the password has saved in EEPROM
+            // EEPROM Arduino Uno = 1kbytes
+            user_input[index_seven_segments] = counter;
+            Serial.print("Index: ");
+            Serial.print(index_seven_segments);
+            Serial.print("Value: ");
+            Serial.println(counter);
+            // Switch to the next seven-segments
+            if (index_seven_segments < 3) index_seven_segments++;
+
+
+            // TODO:
+
+            // TODO: EEPROM variable
+            // - Password // byte array (0->100)
+            // - Attempts times // in
+            // -
         }
     }
     // If the state of CLK is changed, then pulse occurred
@@ -262,11 +287,11 @@ void loop() {
             Serial.print("Counter-clockwise");
         Serial.print(" | COUNTER: ");
         Serial.println(counter);
+
         displayNumber(counter, seven_segments[index_seven_segments]);
     }
     // save last CLK state
     prev_RE_CLK_state = RE_CLK_state;
-
 }
 
 

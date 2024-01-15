@@ -1,5 +1,8 @@
+//
+// Created by Dung Phan on 1/11/2024.
+//
 #include <Arduino.h>
-//#include <Servo.h>
+#include <Servo.h>
 
 // -- COMPONENTS --
 //  SHIFT REGISTER
@@ -12,18 +15,17 @@ const int BCD_B_PIN = A1;  // BCD Input 2
 const int BCD_C_PIN = A2;  // BCD Input 3
 const int BCD_D_PIN = A3;  // BCD Input 4
 // ROTARY ENCODER
-const int RE_BUTTON_PIN = 6;  // SW
-const int RE_CLK_PIN = 5;     // A
-const int RE_DATA_PIN = 4;    // B
+const int RE_BUTTON_PIN = 10;  // SW
+const int RE_CLK_PIN = 9;     // A
+const int RE_DATA_PIN = 8;    // B
 const int DIRECTION_CW = 0;   // clockwise direction
 const int DIRECTION_CCW = 1;  // counter-clockwise direction
 // BUTTON
-const int BUTTON_SUBMIT_PIN = 1;  // BUTTON Check pass
-//const int BUTTON_OPEN_PIN = 2;    // BUTTON OPEN DOOR
-
+const int BUTTON_SUBMIT_PIN = 7;  // BUTTON Check pass
+//const int BUTTON_OPEN_PIN = 6;    // BUTTON OPEN DOOR
 // SERVO
-//Servo MYSERVO;
-//const int SERVO_PIN = 0;
+Servo MYSERVO;
+const int SERVO_PIN = 5;
 
 // -- VARIABLES
 const int DEBOUNCE_TIME = 50;
@@ -191,17 +193,18 @@ void displayNumber(int number, int display) {
     }
 }
 
+// 
 bool isButtonPressed(int button_pin) {
     static unsigned long time_of_last_change = 0;
-    static int button_state = HIGH;    // initial state: not pressed
+    static int button_state = HIGH;  // initial state: not pressed
     const unsigned long current_time = millis();
     const int new_state = digitalRead(button_pin);
 
     if (button_state != new_state && (current_time - time_of_last_change > DEBOUNCE_TIME)) {
         // a valid change was detected
-        time_of_last_change = current_time;         // save time of this change
-        button_state = new_state;                   // update the button's known state
-        if (button_state == LOW) return true;       // if button was pressed, return true
+        time_of_last_change = current_time;    // save time of this change
+        button_state = new_state;              // update the button's known state
+        if (button_state == LOW) return true;  // if button was pressed, return true
     }
     return false;
 }
@@ -221,29 +224,29 @@ void printArray(const int *array, const int *length) {
     }
     Serial.print(" }");
 }
-//
-//void rotateServo(bool rotate) {
-//    if (rotate) {
-//        MYSERVO.write(90);
-//        Serial.print("Servo Angle: ");
-//        Serial.println(90);
-//    } else {
-//        MYSERVO.write(0);
-//        Serial.print("Servo Angle: ");
-//        Serial.println(0);
-//    }
-//}
-//
-//void handleButtonPress() {
-//    static bool servo_rotate = false;  // current state of the servo
-//    if (isButtonPressed(BUTTON_SUBMIT_PIN)) {
-//        servo_rotate = !servo_rotate;
-//        if (servo_rotate) {
-//            Serial.println("The button is pressed");
-//        }
-//        rotateServo(servo_rotate);
-//    }
-//}
+
+void rotateServo(bool rotate) {
+    if (rotate) {
+        MYSERVO.write(90);
+        Serial.print("Servo Angle: ");
+        Serial.println(90);
+    } else {
+        MYSERVO.write(0);
+        Serial.print("Servo Angle: ");
+        Serial.println(0);
+    }
+}
+
+void handleButtonPress() {
+    static bool servo_rotate = false;  // current state of the servo
+    if (isButtonPressed(BUTTON_SUBMIT_PIN)) {
+        servo_rotate = !servo_rotate;
+        if (servo_rotate) {
+            Serial.println("The button is pressed");
+        }
+        rotateServo(servo_rotate);
+    }
+}
 
 void setup() {
     Serial.begin(9600);
@@ -263,7 +266,7 @@ void setup() {
     // BUTTON
     pinMode(BUTTON_SUBMIT_PIN, INPUT_PULLUP);
     // SERVO
-//    MYSERVO.attach(SERVO_PIN);
+    MYSERVO.attach(SERVO_PIN);
 
     displayNumber(0, 0);
     displayNumber(0, 1);
@@ -271,9 +274,6 @@ void setup() {
 }
 
 void loop() {
-    if (isButtonPressed(BUTTON_SUBMIT_PIN)) {
-        Serial.print("Button is pressed");
-    }
     /*
          * TODO: Taking value from RE and displaying it on 7 segments
          * TODO: Create an array with 3 elements (as 3 seven-segments)
@@ -283,14 +283,14 @@ void loop() {
          * TODO: IF (
          */
     // 7-SEGMENTS
-    const int seven_segments[3] = {0, 1, 2};
+    const int seven_segments[3] = { 0, 1, 2 };
     static int index_seven_segments = 0;
     static int counter = 0;
     static bool direction = DIRECTION_CW;
     // PASSWORD
-    //static int password[3] = { 2, 4, 6 };
-    // const int password_length = sizeof(password) / sizeof(password[0]);
-    // static int user_input[3] = {0, 0, 0};
+    static int password[3] = { 2, 4, 6 };
+    const int password_length = sizeof(password) / sizeof(password[0]);
+    static int user_input[3] = { 0, 0, 0 };
     // TIME CHECK
     static unsigned long time_of_last_change = 0;
     const unsigned long current_time = millis();
@@ -300,7 +300,7 @@ void loop() {
     // ROTARY ENCODER CLOCK
     static int prev_RE_CLK_state = HIGH;
     const int RE_CLK_state = digitalRead(RE_CLK_PIN);
-    // static bool servo_rotate = false;
+    static bool servo_rotate = false;
 
 
     if (RE_BUTTON_state != prev_RE_BUTTON_state && (current_time - time_of_last_change > DEBOUNCE_TIME)) {
@@ -314,7 +314,7 @@ void loop() {
             // EEPROM Arduino Uno = 1kbytes
             // Switch to the next seven-segments
             if (index_seven_segments <= 3) {
-                //user_input[index_seven_segments] = counter;
+                user_input[index_seven_segments] = counter;
                 Serial.print("Index: ");
                 Serial.print(index_seven_segments);
                 Serial.print(" Value: ");
@@ -331,8 +331,7 @@ void loop() {
 
     // If the state of CLK is changed, then pulse occurred
     // React to only the rising edge (from LOW to HIGH) to avoid double count
-    if (RE_CLK_state != prev_RE_CLK_state && RE_CLK_state == HIGH &&
-        (current_time - time_of_last_change > DEBOUNCE_TIME)) {
+    if (RE_CLK_state != prev_RE_CLK_state && RE_CLK_state == HIGH && (current_time - time_of_last_change > DEBOUNCE_TIME)) {
         // if the DT state is HIGH
         // the encoder is rotating in counter-clockwise direction => decrease the counter
         if (digitalRead(RE_DATA_PIN) == HIGH) {
@@ -363,14 +362,19 @@ void loop() {
     prev_RE_CLK_state = RE_CLK_state;
 
 
-//    if (isButtonPressed(BUTTON_SUBMIT_PIN) && (index_seven_segments == 3)) {
-//        Serial.println("Check password, please wait!");
-//        delay(1000);
-//        // function check pass
-//        if (isPasswordCorrect(password, password_length, user_input)) {
-//            Serial.println("Password is correct! Servo is rotate!");
-//        } else {
-//            Serial.println("Password is incorrect! Servo is NOT rotate!");
-//        }
-//    }
+    if (isButtonPressed(BUTTON_SUBMIT_PIN) && (index_seven_segments == 3)) {
+        Serial.println("Check password, please wait!");
+        delay(1000);
+        // function check pass
+        if (isPasswordCorrect(password, password_length, user_input)) {
+            Serial.println("Password is correct! Servo is rotate!");
+            servo_rotate = !servo_rotate;
+            if (servo_rotate) {
+                Serial.println("The button is pressed");
+            }
+            rotateServo(servo_rotate);
+        } else {
+            Serial.println("Password is incorrect! Servo is NOT rotate!");
+        }
+    }
 }

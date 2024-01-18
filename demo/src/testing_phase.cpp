@@ -4,18 +4,8 @@
 #include <Arduino.h>
 #include <Servo.h>
 #include <EEPROM.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
-
-
 #include "display.h"
 #include "notification.h"
-
-//OLED
-#define SCREEN_WIDTH 128  // OLED display width,  in pixels
-#define SCREEN_HEIGHT 64  // OLED display height, in pixels
-Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 
 // TODO: CODE CONVENTION
@@ -40,7 +30,7 @@ const int SERVO_PIN = 2;
 
 
 // ## VARIABLES
-const int DEBOUNCE_TIME = 50;
+const int DEBOUNCE_TIME = 70;
 const int DIRECTION_CW = 0;   // clockwise direction
 const int DIRECTION_CCW = 1;  // counter-clockwise direction
 const int EEPROM_USER_MEMORY = 0;
@@ -53,7 +43,6 @@ typedef struct {
     int password[3];
     int attempts;  // How many times did user check password
 } password_t;
-
 
 
 // ## PASSWORD FUNCTIONS
@@ -133,18 +122,16 @@ bool is_password_correct(password_t *user_input) {
 }
 
 void update_password(password_t *user_input) {
-    if (is_button_pressed(BUTTON_SERVO_PIN, DEBOUNCE_TIME)) {
-        int password_length = sizeof(user_input->password) / sizeof(user_input->password[0]);
-        if (is_password_correct(user_input)) {
-            Serial.println("This password is existed! Please try again!");
-            notification_system(EXISTED_PASSWORD);
-        } else {
-            for (int i = 0; i < password_length; ++i) {
-                EEPROM.update(EEPROM_PASSWORD_MEMORY + i, user_input->password[i]);
-            }
-            Serial.println("Change password successfully!");
-            notification_system(SUCCEEDED);
+    int password_length = sizeof(user_input->password) / sizeof(user_input->password[0]);
+    if (is_password_correct(user_input)) {
+        Serial.println("This password is existed! Please try again!");
+        notification_system(EXISTED_PASSWORD);
+    } else {
+        for (int i = 0; i < password_length; ++i) {
+            EEPROM.update(EEPROM_PASSWORD_MEMORY + i, user_input->password[i]);
         }
+        Serial.println("Change password successfully!");
+        notification_system(SUCCEEDED);
     }
 }
 
@@ -177,6 +164,7 @@ void rotate_servo(bool rotate) {
 }
 
 void setup() {
+
     Serial.begin(9600);
     // SHIFT REGISTER
     pinMode(SR_DATA_PIN, OUTPUT);   //13
@@ -212,13 +200,14 @@ void setup() {
 
 void loop() {
     // 7-SEGMENTS
-    const int seven_segments[3] = {0, 1, 2};
+    const int seven_segments[3] = { 0, 1, 2 };
     static int index_seven_segments = 0;          // Tracking the display
     static bool is_index_seven_segments = false;  // If index_seven_segments > 2 -> can not add more input from user
     static bool is_servo_rotate = false;          // If is_index_seven_segments && is_button_pressed(BUTTON_SERVO_PIN, DEBOUNCE_TIME) ->
     static bool is_door_open = false;             // If is_servo_rotate && is_button_pressed(BUTTON_DOOR_PIN, DEBOUNCE_TIME)
     static bool is_reset_index = false;
     static bool is_change_password_mode = false;  // If
+    static bool is_count_to_two = false;
     static int counter = 0;
     // TIME CHECK
     static unsigned long time_of_last_change = 0;
@@ -233,13 +222,12 @@ void loop() {
     // PASSWORD
     password_t password;
     read_password(&password);
-    // USER_INPUT
     static password_t user_input;
+
     // ROTARY INPUT - DOOR CLOSED
     // If the state of CLK is changed, then pulse occurred
     // React to only the rising edge (from LOW to HIGH) to avoid double count
-    if (RE_CLK_state != prev_RE_CLK_state && RE_CLK_state == HIGH &&
-        (current_time - time_of_last_change > DEBOUNCE_TIME)) {
+    if (RE_CLK_state != prev_RE_CLK_state && RE_CLK_state == HIGH && (current_time - time_of_last_change > DEBOUNCE_TIME)) {
         // if the DT state is HIGH
         // the encoder is rotating in counter-clockwise direction => decrease the counter
         if (digitalRead(RE_DATA_PIN) == HIGH) {
@@ -281,17 +269,37 @@ void loop() {
             counter = 0;
             display_number(counter, seven_segments[index_seven_segments]);
             if (index_seven_segments > 2) {
-                is_index_seven_segments = !is_index_seven_segments;
+                is_index_seven_segments = true;
+                is_count_to_two = false;
+            }
+        }
+    } else if  // // DOOR OPEN - CHANGE PASSWORD MODE ON
+            (is_door_open && is_change_password_mode && is_button_pressed(RE_BUTTON_PIN, DEBOUNCE_TIME)) {
+        // Serial.println(digitalRead(BUTTON_SERVO_PIN));
+        if (index_seven_segments < 3) {
+            user_input.password[index_seven_segments] = counter;
+            // Save user_input into EEPROM
+            save_user_input(&user_input, index_seven_segments);
+            Serial.print("Index: ");
+            Serial.print(index_seven_segments);
+            Serial.print(" Value: ");
+            Serial.println(user_input.password[index_seven_segments]);
+            index_seven_segments++;
+            counter = 0;
+            display_number(counter, seven_segments[index_seven_segments]);
+            if (index_seven_segments > 2) {
+                is_index_seven_segments = true;
+                is_count_to_two = true;
             }
         }
     }
     // CHECK PASSWORD - DOOR CLOSED
     if (!is_door_open && is_index_seven_segments && is_button_pressed(BUTTON_SERVO_PIN, DEBOUNCE_TIME)) {
-        is_index_seven_segments = !is_index_seven_segments;
+        is_index_seven_segments = false;
         // CHECK PASSWORD MODE
         Serial.println("Check password, please wait!");
         if (is_password_correct(&user_input)) {
-            is_servo_rotate = !is_servo_rotate;
+            is_servo_rotate = true;
             if (is_servo_rotate) {
                 Serial.println("Password is correct! Servo is rotate!");
                 Serial.println("The button is pressed");
@@ -317,11 +325,22 @@ void loop() {
     }
     // CHECK DOOR - DOOR OPEN
     if (!is_door_open && is_servo_rotate && is_button_pressed(BUTTON_DOOR_PIN, DEBOUNCE_TIME)) {
-        is_servo_rotate = !is_servo_rotate;
+        is_servo_rotate = false;
+        is_door_open = true;
+        is_reset_index = true;
         notification_system(SUCCEEDED);
         Serial.println("The door is open!");
-        is_door_open = !is_door_open;
-        is_reset_index = !is_reset_index;
+    } else if (is_door_open && is_button_pressed(BUTTON_DOOR_PIN, DEBOUNCE_TIME)) {
+        index_seven_segments = 0;
+        is_door_open = false;
+        is_servo_rotate = false;
+        is_reset_index = true;
+        rotate_servo(is_servo_rotate);
+        notification_system(DOOR_CLOSE);
+        Serial.println("The door is close!");
+        display_number(0, 0);
+        display_number(10, 1);
+        display_number(10, 2);
     }
     // // // DOOR OPEN - CHANGE PASSWORD MODE
     if (is_door_open && is_reset_index && is_button_pressed(BUTTON_SERVO_PIN, DEBOUNCE_TIME)) {
@@ -333,25 +352,9 @@ void loop() {
         display_number(10, 1);
         display_number(10, 2);
     }
-    // // DOOR OPEN - CHANGE PASSWORD MODE ON
-    if (is_door_open && is_change_password_mode && is_button_pressed(RE_BUTTON_PIN, DEBOUNCE_TIME)) {
-        // Serial.println(digitalRead(BUTTON_SERVO_PIN));
-        if (index_seven_segments < 3) {
-            user_input.password[index_seven_segments] = counter;
-            // Save user_input into EEPROM
-            save_user_input(&user_input, index_seven_segments);
-            Serial.print("Index: ");
-            Serial.print(index_seven_segments);
-            Serial.print(" Value: ");
-            Serial.println(user_input.password[index_seven_segments]);
-            index_seven_segments++;
-            counter = 0;
-            display_number(counter, seven_segments[index_seven_segments]);
-            if (index_seven_segments > 2) {
-                is_index_seven_segments = !is_index_seven_segments;
-                print_password_array(&user_input);
-                is_change_password_mode = !is_change_password_mode;
-            }
-        }
+    if (is_door_open && is_change_password_mode && is_index_seven_segments && is_count_to_two && is_button_pressed(BUTTON_SERVO_PIN, DEBOUNCE_TIME) == true) {
+        print_password_array(&user_input);
+        update_password(&user_input);
+        is_change_password_mode = !is_change_password_mode;
     }
 }

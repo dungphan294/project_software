@@ -327,6 +327,8 @@ void system_locked() {
 
 }
 
+void save_display(int )
+
 void rotateServo(bool rotate) {
     if (rotate) {
         SERVO.write(180);
@@ -367,14 +369,6 @@ void setup() {
 }
 
 void loop() {
-    /*
-         * TODO: Taking value from RE and displaying it on 7 segments
-         * TODO: Create an array with 3 elements (as 3 seven-segments)
-         * TODO: Using FOR loop to looping over the array.
-         * TODO: Inside FOR loop. Check state of RE_CLK:
-         * TODO:    IF LOW then -> switch to the second element on the array, and so on.
-         * TODO: IF (
-         */
     // 7-SEGMENTS
     const int seven_segments[3] = {0, 1, 2};
     static int index_seven_segments = 0;

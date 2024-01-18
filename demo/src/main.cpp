@@ -216,9 +216,9 @@ bool isPasswordCorrect(const int *password, int password_length, const int *user
     return true;
 }
 
-void printArray(const int *array, const int *length) {
+void printArray(const int *array) {
     Serial.print("{ ");
-    for (int i = 0; i < *length; i++) {
+    for (int i = 0; i < 3; i++) {
         Serial.print(array[i]);
         Serial.print(" ");
     }
